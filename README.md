@@ -20,10 +20,38 @@ This project demonstrates essential Java concepts, including:
 - Simple, focused, and clutter-free interface
 - Tasks are saved locally using text file I/O
 
-### Ideal Use Cases
-- Practice project for Java learners
-- Personal to-do tracker
-- Lightweight task organizer for everyday use
+## Screenshots
+
+![Program Screenshot](./assets/)
+
+### How to Run
+
+Follow these steps to run the application locally:
+
+#### 1. Clone the repository
+
+```bash
+git clone https://github.com/melio0504/thinkfast
+cd ThinkFast
+```
+
+#### 2. Navigate to the src folder
+
+```bash
+cd src
+```
+
+#### 3. Compile the Java files
+
+```bash
+javac ThinkFast.java SplashScreen.java 
+```
+
+#### 4. Run the application
+
+```bash
+java ThinkFast
+```
 
 ---
 
