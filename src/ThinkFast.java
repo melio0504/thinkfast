@@ -30,13 +30,11 @@ public class ThinkFast extends JFrame {
 
     private ImageIcon createAppIcon() {
             try {
-                // Try loading from file system first
                 File iconFile = new File("./assets/icon.png");
                 if (iconFile.exists()) {
                     return new ImageIcon(iconFile.getAbsolutePath());
                 }
                 
-                // Fallback to resource (when packaged in JAR)
                 InputStream imgStream = getClass().getResourceAsStream("/icon.png");
                 if (imgStream != null) {
                     return new ImageIcon(ImageIO.read(imgStream));
@@ -45,7 +43,6 @@ public class ThinkFast extends JFrame {
                 e.printStackTrace();
             }
             
-            // Return null if no icon found
             return null;
         }
 
@@ -62,11 +59,9 @@ public class ThinkFast extends JFrame {
         if (appIcon != null) {
             setIconImage(appIcon.getImage());
             
-            // For better Windows support (taskbar icon)
             try {
                 Taskbar.getTaskbar().setIconImage(appIcon.getImage());
             } catch (Exception e) {
-                // Fallback if Taskbar API not supported
             }
         }
 
@@ -306,17 +301,14 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
                     int x = (getWidth() - diameter) / 2;
                     int y = (getHeight() - diameter) / 2;
                     
-                    // Draw circle outline
                     g2d.setColor(Color.LIGHT_GRAY);
                     g2d.drawOval(x, y, diameter, diameter);
                     
-                    // Draw animation fill if animating
                     if (animationProgress > 0) {
                         g2d.setColor(new Color(DARK_RED.getRed(), DARK_RED.getGreen(), DARK_RED.getBlue(), 
                             (int)(200 * animationProgress)));
                         g2d.fillOval(x, y, diameter, diameter);
                         
-                        // Draw checkmark when animation complete
                         if (animationProgress >= 1f) {
                             g2d.setColor(WHITE);
                             g2d.setStroke(new BasicStroke(2));
@@ -325,7 +317,6 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
                         }
                     }
                     
-                    // Hover effect
                     if (isHovering) {
                         g2d.setColor(new Color(GREEN.getRed(), GREEN.getGreen(), GREEN.getBlue(), 50));
                         g2d.fillOval(x, y, diameter, diameter);
@@ -336,7 +327,6 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
                 }
             };
             
-            // Configure button
             circleButton.setContentAreaFilled(false);
             circleButton.setBorderPainted(false);
             circleButton.setFocusPainted(false);
@@ -344,14 +334,12 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
             circleButton.setPreferredSize(new Dimension(30, 30));
             circleButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             
-            // Add action listener
             circleButton.addActionListener(e -> {
                 if (currentIndex >= 0 && currentIndex < tasks.size()) {
                     startAnimation();
                 }
             });
             
-            // Initialize components
             titleLabel.setFont(new Font("Arial", Font.BOLD, 16));
             descLabel.setFont(new Font("Arial", Font.PLAIN, 12));
             descLabel.setForeground(Color.GRAY);
@@ -373,7 +361,6 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
             add(circleButton, BorderLayout.WEST);
             add(contentPanel, BorderLayout.CENTER);
 
-            // Animation timer
             animationTimer = new Timer(20, e -> {
                 animationProgress += 0.05f;
                 if (animationProgress >= 1f) {
@@ -384,7 +371,6 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
                 repaint();
             });
 
-            // Mouse listeners for hover effect
             circleButton.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseEntered(MouseEvent e) {
@@ -434,7 +420,6 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
             descLabel.setText(task.getDescription());
             descLabel.setToolTipText(task.getDescription());
             
-            // Date formatting
             String dueDate = task.getDueDate();
             if (!dueDate.isEmpty()) {
                 try {
@@ -463,7 +448,6 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
                 dateLabel.setText("No Date");
             }
             
-            // Selection styling
             if (isSelected) {
                 setBackground(new Color(220, 220, 220));
             } else {
@@ -516,7 +500,6 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
         dateField.setFont(new Font("Arial", Font.PLAIN, 14));
         dateField.setToolTipText("Format: DD/MM/YYYY");
         
-        // Set placeholder text
         dateField.setText("DD/MM/YYYY");
         dateField.setForeground(Color.GRAY);
         dateField.addFocusListener(new FocusAdapter() {
@@ -571,14 +554,12 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
         dialog.setPreferredSize(new Dimension(500, 350));
         dialog.pack();
 
-        // Add validation when OK button is clicked
         pane.addPropertyChangeListener(e -> {
             if (e.getPropertyName().equals("value")) {
                 if (pane.getValue() != null && pane.getValue().equals(JOptionPane.OK_OPTION)) {
                     String title = titleField.getText().trim();
                     String dateText = dateField.getText().trim();
                     
-                    // Reset error states
                     titleLabel.setForeground(Color.BLACK);
                     titleLabel.setText("Title:");
                     dateLabel.setForeground(Color.BLACK);
@@ -587,7 +568,6 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
                     boolean isValid = true;
                     StringBuilder errorMessage = new StringBuilder("Please finish:\n");
                     
-                    // Validate title
                     if (title.isEmpty()) {
                         titleLabel.setForeground(Color.RED);
                         titleLabel.setText("Title: (required)");
@@ -595,14 +575,12 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
                         isValid = false;
                     }
                     
-                    // Validate date
                     if (dateText.isEmpty() || dateText.equals("DD/MM/YYYY")) {
                         dateLabel.setForeground(Color.RED);
                         dateLabel.setText("Due Date: (required)");
                         errorMessage.append("- Due Date is required\n");
                         isValid = false;
                     } else {
-                        // Additional date format validation
                         try {
                             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
                             sdf.setLenient(false);
@@ -616,7 +594,6 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
                     }
                     
                     if (!isValid) {
-                        // Show error dialog
                         JOptionPane.showMessageDialog(
                             dialog,
                             errorMessage.toString(),
@@ -624,10 +601,8 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
                             JOptionPane.WARNING_MESSAGE
                         );
                         
-                        // Prevent dialog from closing
                         pane.setValue(JOptionPane.UNINITIALIZED_VALUE);
                     } else {
-                        // Proceed with task creation
                         if (dateText.equals("DD/MM/YYYY")) {
                             dateText = "";
                         }
@@ -647,22 +622,6 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
 
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
-
-        if (pane.getValue() != null && pane.getValue().equals(JOptionPane.OK_OPTION)) {
-            String dateText = dateField.getText();
-            if (dateText.equals("DD/MM/YYYY")) {
-                dateText = "";
-            }
-            
-            Task task = new Task(
-                titleField.getText(),
-                descArea.getText(),
-                dateText
-            );
-            tasks.add(task);
-            sortTasks();
-            saveTasks();
-        }
     }
 
     private void editTask() {
@@ -674,7 +633,6 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
 
         Task task = tasks.get(selectedIndex);
         
-        // Create input fields
         JTextField titleField = new JTextField(task.getTitle(), 20);
         titleField.setFont(new Font("Arial", Font.PLAIN, 16));
         
@@ -688,14 +646,12 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
         dateField.setFont(new Font("Arial", Font.PLAIN, 14));
         dateField.setToolTipText("Format: DD/MM/YYYY");
         
-        // Set up the panel
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(WHITE);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.anchor = GridBagConstraints.WEST;
         
-        // Add components to panel
         gbc.gridx = 0;
         gbc.gridy = 0;
         panel.add(new JLabel("Name:"), gbc);
@@ -725,7 +681,6 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.add(dateField, gbc);
         
-        // Create the option pane
         JOptionPane pane = new JOptionPane(panel, 
             JOptionPane.PLAIN_MESSAGE, 
             JOptionPane.OK_CANCEL_OPTION);
@@ -734,7 +689,6 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
         dialog.setPreferredSize(new Dimension(500, 350));
         dialog.pack();
 
-        // Add validation when OK button is clicked
         pane.addPropertyChangeListener(e -> {
             if (e.getPropertyName().equals("value")) {
                 if (pane.getValue() != null && pane.getValue().equals(JOptionPane.OK_OPTION)) {
@@ -744,13 +698,11 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
                     boolean isValid = true;
                     StringBuilder errorMessage = new StringBuilder("Please fix:\n");
                     
-                    // Validate title
                     if (title.isEmpty()) {
                         errorMessage.append("- Title is required\n");
                         isValid = false;
                     }
                     
-                    // Validate date
                     if (!dateText.isEmpty()) {
                         try {
                             SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
@@ -771,7 +723,6 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
                         );
                         pane.setValue(JOptionPane.UNINITIALIZED_VALUE);
                     } else {
-                        // Update the task if validation passes
                         task.setTitle(title);
                         task.setDescription(descArea.getText());
                         task.setDueDate(dateText);
@@ -789,12 +740,29 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
     private void deleteTask() {
         int selectedIndex = taskList.getSelectedIndex();
         if (selectedIndex == -1) {
-            JOptionPane.showMessageDialog(this, "Select a task first!", "Oopsie!", JOptionPane.WARNING_MESSAGE);
+            JOptionPane.showMessageDialog(this, 
+                "Select a task first!", 
+                "Oopsie!", 
+                JOptionPane.WARNING_MESSAGE);
             return;
         }
-        tasks.remove(selectedIndex);
-        updateList();
-        saveTasks();
+
+        Task taskToDelete = tasks.get(selectedIndex);
+        
+        int response = JOptionPane.showConfirmDialog(
+            this,
+            "Are you sure you want to delete the task:\n" +
+            "\"" + taskToDelete.getTitle() + "\"?",
+            "Confirm Deletion",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+
+        if (response == JOptionPane.YES_OPTION) {
+            tasks.remove(selectedIndex);
+            updateList();
+            saveTasks();
+        }
     }
 
     private void updateList() {
