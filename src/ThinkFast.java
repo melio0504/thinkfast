@@ -13,8 +13,6 @@ import java.util.List;
 import javax.swing.Timer;
 import javax.imageio.ImageIO;
 
-import java.awt.image.BufferedImage;
-
 public class ThinkFast extends JFrame {
     private List<Task> tasks = new ArrayList<>();
     private List<Task> completedTasks = new ArrayList<>();
@@ -499,7 +497,7 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.anchor = GridBagConstraints.WEST;
         
-        JLabel titleLabel = new JLabel("Title:");
+        JLabel titleLabel = new JLabel("Name:");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 14));
         JTextField titleField = new JTextField(20);
         titleField.setFont(new Font("Arial", Font.PLAIN, 16));
@@ -514,18 +512,30 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
         
         JLabel dateLabel = new JLabel("Due Date:");
         dateLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        JPanel datePanel = new JPanel(new BorderLayout());
-        JFormattedTextField dateField = new JFormattedTextField(new SimpleDateFormat("dd/MM/yyyy"));
+        JTextField dateField = new JTextField(15);
         dateField.setFont(new Font("Arial", Font.PLAIN, 14));
-        dateField.setColumns(15);
-        JButton datePickerButton = new JButton("...");
-        datePickerButton.setFont(new Font("Arial", Font.PLAIN, 14));
-        datePickerButton.addActionListener(e -> {
-            showDatePicker(dateField);
-            dateField.requestFocus();
+        dateField.setToolTipText("Format: DD/MM/YYYY");
+        
+        // Set placeholder text
+        dateField.setText("DD/MM/YYYY");
+        dateField.setForeground(Color.GRAY);
+        dateField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusGained(FocusEvent e) {
+                if (dateField.getText().equals("DD/MM/YYYY")) {
+                    dateField.setText("");
+                    dateField.setForeground(Color.BLACK);
+                }
+            }
+            
+            @Override
+            public void focusLost(FocusEvent e) {
+                if (dateField.getText().isEmpty()) {
+                    dateField.setForeground(Color.GRAY);
+                    dateField.setText("DD/MM/YYYY");
+                }
+            }
         });
-        datePanel.add(dateField, BorderLayout.CENTER);
-        datePanel.add(datePickerButton, BorderLayout.EAST);
         
         gbc.gridx = 0;
         gbc.gridy = 0;
@@ -554,42 +564,106 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
         
         gbc.gridx = 1;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        panel.add(datePanel, gbc);
+        panel.add(dateField, gbc);
         
         JOptionPane pane = new JOptionPane(panel, JOptionPane.PLAIN_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
         JDialog dialog = pane.createDialog(this, "Add New Task");
         dialog.setPreferredSize(new Dimension(500, 350));
         dialog.pack();
+
+        // Add validation when OK button is clicked
+        pane.addPropertyChangeListener(e -> {
+            if (e.getPropertyName().equals("value")) {
+                if (pane.getValue() != null && pane.getValue().equals(JOptionPane.OK_OPTION)) {
+                    String title = titleField.getText().trim();
+                    String dateText = dateField.getText().trim();
+                    
+                    // Reset error states
+                    titleLabel.setForeground(Color.BLACK);
+                    titleLabel.setText("Title:");
+                    dateLabel.setForeground(Color.BLACK);
+                    dateLabel.setText("Due Date:");
+                    
+                    boolean isValid = true;
+                    StringBuilder errorMessage = new StringBuilder("Please finish:\n");
+                    
+                    // Validate title
+                    if (title.isEmpty()) {
+                        titleLabel.setForeground(Color.RED);
+                        titleLabel.setText("Title: (required)");
+                        errorMessage.append("- Title is required\n");
+                        isValid = false;
+                    }
+                    
+                    // Validate date
+                    if (dateText.isEmpty() || dateText.equals("DD/MM/YYYY")) {
+                        dateLabel.setForeground(Color.RED);
+                        dateLabel.setText("Due Date: (required)");
+                        errorMessage.append("- Due Date is required\n");
+                        isValid = false;
+                    } else {
+                        // Additional date format validation
+                        try {
+                            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                            sdf.setLenient(false);
+                            sdf.parse(dateText);
+                        } catch (Exception ex) {
+                            dateLabel.setForeground(Color.RED);
+                            dateLabel.setText("Due Date: (invalid format)");
+                            errorMessage.append("- Due Date must be in DD/MM/YYYY format\n");
+                            isValid = false;
+                        }
+                    }
+                    
+                    if (!isValid) {
+                        // Show error dialog
+                        JOptionPane.showMessageDialog(
+                            dialog,
+                            errorMessage.toString(),
+                            "Incomplete Information",
+                            JOptionPane.WARNING_MESSAGE
+                        );
+                        
+                        // Prevent dialog from closing
+                        pane.setValue(JOptionPane.UNINITIALIZED_VALUE);
+                    } else {
+                        // Proceed with task creation
+                        if (dateText.equals("DD/MM/YYYY")) {
+                            dateText = "";
+                        }
+                        
+                        Task task = new Task(
+                            title,
+                            descArea.getText(),
+                            dateText
+                        );
+                        tasks.add(task);
+                        sortTasks();
+                        saveTasks();
+                    }
+                }
+            }
+        });
+
+
+        dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
 
         if (pane.getValue() != null && pane.getValue().equals(JOptionPane.OK_OPTION)) {
+            String dateText = dateField.getText();
+            if (dateText.equals("DD/MM/YYYY")) {
+                dateText = "";
+            }
+            
             Task task = new Task(
                 titleField.getText(),
                 descArea.getText(),
-                dateField.getText()
+                dateText
             );
             tasks.add(task);
             sortTasks();
             saveTasks();
         }
-    }
-
-    private void showDatePicker(JFormattedTextField dateField) {
-        JDialog dateDialog = new JDialog(this, "Select Date", true);
-        dateDialog.setLayout(new BorderLayout());
-        
-        JCalendar calendar = new JCalendar();
-        calendar.addPropertyChangeListener("calendar", e -> {
-            Date selectedDate = calendar.getDate();
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-            dateField.setValue(sdf.format(selectedDate));
-            dateDialog.dispose();
-        });
-        
-        dateDialog.add(calendar, BorderLayout.CENTER);
-        dateDialog.setSize(300, 300);
-        dateDialog.setLocationRelativeTo(this);
-        dateDialog.setVisible(true);
     }
 
     private void editTask() {
@@ -611,10 +685,6 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
         dateField.setValue(task.getDueDate());
         dateField.setColumns(15);
         JButton datePickerButton = new JButton("...");
-        datePickerButton.addActionListener(e -> {
-            showDatePicker(dateField);
-            dateField.requestFocus();
-        });
         datePanel.add(dateField, BorderLayout.CENTER);
         datePanel.add(datePickerButton, BorderLayout.EAST);
 
