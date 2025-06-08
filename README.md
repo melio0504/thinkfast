@@ -1,4 +1,4 @@
-## ThinkFast: A Clean and Simple Task Tracker
+## ThinkFast: A Clean and Simple To-Do List Application
 
 **ThinkFast** is a lightweight Java desktop application for tracking tasks and staying organized. It features a clean interface, intuitive controls, and emphasizes solid Object-Oriented Programming (OOP) design.
 
@@ -27,4 +27,4 @@ This project demonstrates essential Java concepts, including:
 
 ---
 
-🔧 Built with core Java, using standard libraries and GUI components.
+Built with core Java, using standard libraries and GUI components.
