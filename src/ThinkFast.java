@@ -645,7 +645,6 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
             }
         });
 
-
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
 
@@ -674,64 +673,117 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
         }
 
         Task task = tasks.get(selectedIndex);
+        
+        // Create input fields
         JTextField titleField = new JTextField(task.getTitle(), 20);
+        titleField.setFont(new Font("Arial", Font.PLAIN, 16));
+        
         JTextArea descArea = new JTextArea(task.getDescription(), 5, 20);
+        descArea.setFont(new Font("Arial", Font.PLAIN, 16));
         descArea.setLineWrap(true);
         descArea.setWrapStyleWord(true);
         JScrollPane descScrollPane = new JScrollPane(descArea);
         
-        JPanel datePanel = new JPanel(new BorderLayout());
-        JFormattedTextField dateField = new JFormattedTextField(new SimpleDateFormat("dd/MM/yyyy"));
-        dateField.setValue(task.getDueDate());
-        dateField.setColumns(15);
-        JButton datePickerButton = new JButton("...");
-        datePanel.add(dateField, BorderLayout.CENTER);
-        datePanel.add(datePickerButton, BorderLayout.EAST);
-
+        JTextField dateField = new JTextField(task.getDueDate(), 15);
+        dateField.setFont(new Font("Arial", Font.PLAIN, 14));
+        dateField.setToolTipText("Format: DD/MM/YYYY");
+        
+        // Set up the panel
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(WHITE);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(10, 10, 10, 10);
         gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
         
+        // Add components to panel
         gbc.gridx = 0;
         gbc.gridy = 0;
-        panel.add(new JLabel("Title:"), gbc);
+        panel.add(new JLabel("Name:"), gbc);
+        
         gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
         panel.add(titleField, gbc);
         
         gbc.gridx = 0;
         gbc.gridy = 1;
+        gbc.fill = GridBagConstraints.NONE;
         panel.add(new JLabel("Description:"), gbc);
+        
         gbc.gridx = 1;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
+        gbc.weighty = 1.0;
         panel.add(descScrollPane, gbc);
         
         gbc.gridx = 0;
         gbc.gridy = 2;
+        gbc.fill = GridBagConstraints.NONE;
         gbc.weighty = 0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.add(new JLabel("Due Date:"), gbc);
+        
         gbc.gridx = 1;
-        panel.add(datePanel, gbc);
-
-        JOptionPane pane = new JOptionPane(panel, JOptionPane.PLAIN_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        panel.add(dateField, gbc);
+        
+        // Create the option pane
+        JOptionPane pane = new JOptionPane(panel, 
+            JOptionPane.PLAIN_MESSAGE, 
+            JOptionPane.OK_CANCEL_OPTION);
+        
         JDialog dialog = pane.createDialog(this, "Edit Task");
-        dialog.setPreferredSize(new Dimension(400, 300));
+        dialog.setPreferredSize(new Dimension(500, 350));
         dialog.pack();
-        dialog.setVisible(true);
 
-        if (pane.getValue() != null && pane.getValue().equals(JOptionPane.OK_OPTION)) {
-            task.setTitle(titleField.getText());
-            task.setDescription(descArea.getText());
-            task.setDueDate(dateField.getText());
-            sortTasks();
-            saveTasks();
-        }
+        // Add validation when OK button is clicked
+        pane.addPropertyChangeListener(e -> {
+            if (e.getPropertyName().equals("value")) {
+                if (pane.getValue() != null && pane.getValue().equals(JOptionPane.OK_OPTION)) {
+                    String title = titleField.getText().trim();
+                    String dateText = dateField.getText().trim();
+                    
+                    boolean isValid = true;
+                    StringBuilder errorMessage = new StringBuilder("Please fix:\n");
+                    
+                    // Validate title
+                    if (title.isEmpty()) {
+                        errorMessage.append("- Title is required\n");
+                        isValid = false;
+                    }
+                    
+                    // Validate date
+                    if (!dateText.isEmpty()) {
+                        try {
+                            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                            sdf.setLenient(false);
+                            sdf.parse(dateText);
+                        } catch (Exception ex) {
+                            errorMessage.append("- Due Date must be in DD/MM/YYYY format (or empty)\n");
+                            isValid = false;
+                        }
+                    }
+                    
+                    if (!isValid) {
+                        JOptionPane.showMessageDialog(
+                            dialog,
+                            errorMessage.toString(),
+                            "Invalid Information",
+                            JOptionPane.WARNING_MESSAGE
+                        );
+                        pane.setValue(JOptionPane.UNINITIALIZED_VALUE);
+                    } else {
+                        // Update the task if validation passes
+                        task.setTitle(title);
+                        task.setDescription(descArea.getText());
+                        task.setDueDate(dateText);
+                        sortTasks();
+                        saveTasks();
+                    }
+                }
+            }
+        });
+
+        dialog.setLocationRelativeTo(this);
+        dialog.setVisible(true);
     }
 
     private void deleteTask() {
