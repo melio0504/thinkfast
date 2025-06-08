@@ -10,7 +10,6 @@ import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.List;
-import javax.swing.Timer;
 import javax.imageio.ImageIO;
 
 public class ThinkFast extends JFrame {
@@ -26,7 +25,6 @@ public class ThinkFast extends JFrame {
     private final Color WHITE = Color.WHITE;
     private final Color LIGHT_GRAY = new Color(245, 245, 245);
     private final Color PAPER_LINE_COLOR = new Color(139, 0, 0);
-    private final Color GREEN = new Color(50, 150, 50);
 
     private ImageIcon createAppIcon() {
             try {
@@ -158,6 +156,21 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
             public void mouseClicked(MouseEvent e) {
                 int index = taskList.locationToIndex(e.getPoint());
                 if (index >= 0) {
+                    TaskListRenderer renderer = (TaskListRenderer) taskList.getCellRenderer()
+                        .getListCellRendererComponent(taskList, taskList.getModel().getElementAt(index), 
+                        index, false, false);
+                    
+                    Rectangle cellBounds = taskList.getCellBounds(index, index);
+                    renderer.setBounds(cellBounds);
+                    
+                    Point relativePoint = SwingUtilities.convertPoint(taskList, e.getPoint(), renderer);
+                    
+                    if (renderer.markAsDone.contains(relativePoint)) {
+                        renderer.markAsDone.dispatchEvent(
+                            SwingUtilities.convertMouseEvent(taskList, e, renderer.markAsDone));
+                        return;
+                    }
+                    
                     taskList.setSelectedIndex(index);
                 }
             }
@@ -278,22 +291,18 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
         private JLabel dateLabel = new JLabel();
         private JPanel contentPanel = new JPanel(new BorderLayout());
         private JPanel textPanel = new JPanel();
-        private JButton circleButton;
+        private JButton markAsDone;
+        private boolean isMarkHovered = false; 
         private int currentIndex = -1;
-
-        private Timer animationTimer;
-        private float animationProgress = 0f;
-        private boolean isHovering = false;
 
         public TaskListRenderer() {
             setLayout(new BorderLayout());
             setOpaque(true);
             setBorder(new EmptyBorder(10, 10, 10, 20));
             
-            circleButton = new JButton() {
+            markAsDone = new JButton() {
                 @Override
                 protected void paintComponent(Graphics g) {
-                    super.paintComponent(g);
                     Graphics2D g2d = (Graphics2D) g.create();
                     g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                     
@@ -301,42 +310,65 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
                     int x = (getWidth() - diameter) / 2;
                     int y = (getHeight() - diameter) / 2;
                     
+                    if (isMarkHovered) {
+                        g2d.setColor(new Color(200, 200, 200));
+                        g2d.fillOval(x, y, diameter, diameter);
+                    }
+                    
                     g2d.setColor(Color.LIGHT_GRAY);
                     g2d.drawOval(x, y, diameter, diameter);
                     
-                    if (animationProgress > 0) {
-                        g2d.setColor(new Color(DARK_RED.getRed(), DARK_RED.getGreen(), DARK_RED.getBlue(), 
-                            (int)(200 * animationProgress)));
-                        g2d.fillOval(x, y, diameter, diameter);
-                        
-                        if (animationProgress >= 1f) {
-                            g2d.setColor(WHITE);
-                            g2d.setStroke(new BasicStroke(2));
-                            g2d.drawLine(x + 5, y + 10, x + 9, y + 14);
-                            g2d.drawLine(x + 9, y + 14, x + 15, y + 8);
-                        }
-                    }
-                    
-                    if (isHovering) {
-                        g2d.setColor(new Color(GREEN.getRed(), GREEN.getGreen(), GREEN.getBlue(), 50));
-                        g2d.fillOval(x, y, diameter, diameter);
-                        g2d.setColor(GREEN);
-                        g2d.drawOval(x, y, diameter, diameter);
-                    }
                     g2d.dispose();
                 }
+                
+                @Override
+                public Dimension getPreferredSize() {
+                    return new Dimension(30, 30);
+                }
+                
+                @Override
+                public boolean contains(int x, int y) {
+                    int centerX = getWidth() / 2;
+                    int centerY = getHeight() / 2;
+                    int radius = 10;
+                    return (x - centerX) * (x - centerX) + (y - centerY) * (y - centerY) <= radius * radius;
+                }
             };
+
+            markAsDone.setContentAreaFilled(false);
+            markAsDone.setBorderPainted(false);
+            markAsDone.setFocusPainted(false);
+            markAsDone.setOpaque(false);
+            markAsDone.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             
-            circleButton.setContentAreaFilled(false);
-            circleButton.setBorderPainted(false);
-            circleButton.setFocusPainted(false);
-            circleButton.setOpaque(false);
-            circleButton.setPreferredSize(new Dimension(30, 30));
-            circleButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-            
-            circleButton.addActionListener(e -> {
-                if (currentIndex >= 0 && currentIndex < tasks.size()) {
-                    startAnimation();
+            markAsDone.addMouseListener(new MouseAdapter() {
+            @Override
+                public void mouseEntered(MouseEvent e) {
+                    isMarkHovered = true;
+                    markAsDone.repaint();
+                }
+                
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    isMarkHovered = false;
+                    markAsDone.repaint();
+                }
+                
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (currentIndex >= 0 && currentIndex < listModel.size()) {
+                        Task task = listModel.getElementAt(currentIndex);
+                        if (tasks.contains(task)) {
+                            tasks.remove(task);
+                            completedTasks.add(task);
+                        } else if (completedTasks.contains(task)) {
+                            completedTasks.remove(task);
+                            tasks.add(task);
+                        }
+                        updateList();
+                        saveTasks();
+                        updateCompletedCount();
+                    }
                 }
             });
             
@@ -358,57 +390,8 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
             contentPanel.add(textPanel, BorderLayout.CENTER);
             contentPanel.add(dateLabel, BorderLayout.EAST);
             
-            add(circleButton, BorderLayout.WEST);
+            add(markAsDone, BorderLayout.WEST);
             add(contentPanel, BorderLayout.CENTER);
-
-            animationTimer = new Timer(20, e -> {
-                animationProgress += 0.05f;
-                if (animationProgress >= 1f) {
-                    animationProgress = 1f;
-                    animationTimer.stop();
-                    completeTask();
-                }
-                repaint();
-            });
-
-            circleButton.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mouseEntered(MouseEvent e) {
-                    isHovering = true;
-                    repaint();
-                }
-
-                @Override
-                public void mouseExited(MouseEvent e) {
-                    isHovering = false;
-                    repaint();
-                }
-            });
-        }
-
-        private void startAnimation() {
-            animationProgress = 0f;
-            animationTimer.start();
-        }
-
-        private void completeTask() {
-            if (currentIndex >= 0 && currentIndex < tasks.size()) {
-                Task task = tasks.get(currentIndex);
-                tasks.remove(currentIndex);
-                completedTasks.add(task);
-                updateList();
-                saveTasks();
-                updateCompletedCount();
-            }
-        }
-
-        private void updateCompletedCount() {
-            viewComboBoxModel.removeElementAt(1);
-            viewComboBoxModel.insertElementAt("Completed (" + completedTasks.size() + ")", 1);
-            
-            if (viewComboBox.getSelectedIndex() == 1) {
-                showCompletedTasks();
-            }
         }
 
         @Override
@@ -455,10 +438,20 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
                 titleLabel.setForeground(Color.BLACK);
             }
 
+            markAsDone.setEnabled(list.isEnabled());
+            
             return this;
         }
-    }
 
+        private void updateCompletedCount() {
+            viewComboBoxModel.removeElementAt(1);
+            viewComboBoxModel.insertElementAt("Completed (" + completedTasks.size() + ")", 1);
+            
+            if (viewComboBox.getSelectedIndex() == 1) {
+                showCompletedTasks();
+            }
+        }
+    }
 
     private void showCompletedTasks() {
         listModel.clear();
