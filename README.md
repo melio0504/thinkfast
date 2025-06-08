@@ -20,7 +20,7 @@ This project demonstrates essential Java concepts, including:
 - Simple, focused, and clutter-free interface
 - Tasks are saved locally using text file I/O
 
-## Screenshots
+## Screenshot
 
 ![Program Screenshot](./assets/1.png)
 
