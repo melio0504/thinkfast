@@ -22,7 +22,7 @@ This project demonstrates essential Java concepts, including:
 
 ## Screenshots
 
-![Program Screenshot](./assets/)
+![Program Screenshot](./assets/1.png)
 
 ### How to Run
 
