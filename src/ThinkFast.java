@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.*;
 import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -12,14 +13,18 @@ import java.util.List;
 
 public class ThinkFast extends JFrame {
     private List<Task> tasks = new ArrayList<>();
+    private List<Task> completedTasks = new ArrayList<>();
     private DefaultListModel<Task> listModel = new DefaultListModel<>();
     private JList<Task> taskList;
     private JComboBox<String> sortComboBox;
+    private JComboBox<String> viewComboBox;
+    private DefaultComboBoxModel<String> viewComboBoxModel;
 
     private final Color DARK_RED = new Color(150, 40, 40);
     private final Color WHITE = Color.WHITE;
     private final Color LIGHT_GRAY = new Color(245, 245, 245);
-    private final Color PAPER_LINE_COLOR = new Color(220, 220, 255);
+    private final Color PAPER_LINE_COLOR = new Color(139, 0, 0);
+    private final Color GREEN = new Color(50, 150, 50);
 
     public ThinkFast() {
         setTitle("ThinkFast");
@@ -35,7 +40,7 @@ public class ThinkFast extends JFrame {
         headerPanel.setPreferredSize(new Dimension(getWidth(), 60));
         headerPanel.setLayout(new BorderLayout());
 
-        JLabel titleLabel = new JLabel("ThinkFast: Task Tracker");
+        JLabel titleLabel = new JLabel("ThinkFast: To-Do List");
         titleLabel.setForeground(WHITE);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         titleLabel.setBorder(new EmptyBorder(0, 20, 0, 0));
@@ -64,6 +69,7 @@ public class ThinkFast extends JFrame {
         taskList.setBackground(LIGHT_GRAY);
         taskList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         taskList.setBorder(new EmptyBorder(0, 0, 0, 0));
+        taskList.setFixedCellHeight(60);
 
         taskList.setDragEnabled(true);
         taskList.setDropMode(DropMode.INSERT);
@@ -73,6 +79,25 @@ public class ThinkFast extends JFrame {
         scrollPane.setBorder(null);
         scrollPane.getViewport().setBackground(LIGHT_GRAY);
         contentPanel.add(scrollPane, BorderLayout.CENTER);
+
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.setBackground(LIGHT_GRAY);
+        bottomPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
+
+        viewComboBoxModel = new DefaultComboBoxModel<>(new String[]{"Active Tasks", "Completed (0)"});
+viewComboBox = new JComboBox<>(viewComboBoxModel);
+        viewComboBox.addActionListener(e -> {
+            if (viewComboBox.getSelectedIndex() == 1) {
+                showCompletedTasks();
+            } else {
+                updateList();
+            }
+        });
+        JPanel viewPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+        viewPanel.setBackground(LIGHT_GRAY);
+        viewPanel.add(new JLabel("View:"));
+        viewPanel.add(viewComboBox);
+        bottomPanel.add(viewPanel, BorderLayout.NORTH);
 
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 20, 10));
@@ -86,10 +111,11 @@ public class ThinkFast extends JFrame {
         buttonPanel.add(editButton);
         buttonPanel.add(deleteButton);
         buttonPanel.add(addButton);
+        bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         add(topPanel, BorderLayout.NORTH);
         add(contentPanel, BorderLayout.CENTER);
-        add(buttonPanel, BorderLayout.SOUTH);
+        add(bottomPanel, BorderLayout.SOUTH);
 
         loadTasks();
 
@@ -208,24 +234,93 @@ public class ThinkFast extends JFrame {
 
     private class TaskListRenderer extends JPanel implements ListCellRenderer<Task> {
         private JLabel titleLabel = new JLabel();
+        private JLabel descLabel = new JLabel();
         private JLabel dateLabel = new JLabel();
         private JPanel linePanel = new JPanel(new BorderLayout());
+        private JPanel contentPanel = new JPanel(new BorderLayout());
+        private JPanel textPanel = new JPanel();
+        private JPanel circlePanel = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                g.setColor(Color.LIGHT_GRAY);
+                g.drawOval(5, 5, 20, 20);
+            }
+        };
+        private boolean isHovering = false;
 
         public TaskListRenderer() {
             setLayout(new BorderLayout());
             setOpaque(true);
-            setBorder(new EmptyBorder(10, 20, 10, 20));
+            setBorder(new EmptyBorder(10, 10, 10, 20));
             
+            circlePanel.setPreferredSize(new Dimension(30, 30));
+            circlePanel.setOpaque(false);
+            
+            // Configure title label
             titleLabel.setFont(new Font("Arial", Font.BOLD, 16));
+            
+            // Configure description label
+            descLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+            descLabel.setForeground(Color.GRAY);
+            
+            // Create a panel for text content (title + description)
+            textPanel.setLayout(new BoxLayout(textPanel, BoxLayout.Y_AXIS));
+            textPanel.setOpaque(false);
+            textPanel.setBorder(new EmptyBorder(0, 10, 0, 10));
+            textPanel.add(titleLabel);
+            textPanel.add(descLabel);
+            
+            // Configure date label
             dateLabel.setFont(new Font("Arial", Font.PLAIN, 12));
             dateLabel.setForeground(Color.GRAY);
             
-            linePanel.setOpaque(false);
-            linePanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, PAPER_LINE_COLOR));
-            linePanel.add(titleLabel, BorderLayout.WEST);
+            // Main content panel
+            contentPanel.setOpaque(false);
+            contentPanel.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, PAPER_LINE_COLOR));
+            contentPanel.add(textPanel, BorderLayout.CENTER);
+            contentPanel.add(dateLabel, BorderLayout.EAST);
             
-            add(linePanel, BorderLayout.CENTER);
-            add(dateLabel, BorderLayout.EAST);
+            add(circlePanel, BorderLayout.WEST);
+            add(contentPanel, BorderLayout.CENTER);
+
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    isHovering = true;
+                    repaint();
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    isHovering = false;
+                    repaint();
+                }
+            });
+
+            addMouseMotionListener(new MouseMotionAdapter() {
+                @Override
+                public void mouseMoved(MouseEvent e) {
+                    if (circlePanel.getBounds().contains(e.getPoint())) {
+                        setToolTipText("Mark as completed");
+                    } else {
+                        setToolTipText(null);
+                    }
+                }
+            });
+
+            addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (circlePanel.getBounds().contains(e.getPoint())) {
+                        int index = taskList.locationToIndex(e.getPoint());
+                        if (index >= 0) {
+                            Task task = tasks.get(index);
+                            completeTask(task, index);
+                        }
+                    }
+                }
+            });
         }
 
         @Override
@@ -233,7 +328,37 @@ public class ThinkFast extends JFrame {
                 int index, boolean isSelected, boolean cellHasFocus) {
             
             titleLabel.setText(task.getTitle());
-            dateLabel.setText(task.getDueDate());
+            descLabel.setText(task.getDescription());
+            descLabel.setToolTipText(task.getDescription());
+            
+            // Format date label
+            String dueDate = task.getDueDate();
+            if (!dueDate.isEmpty()) {
+                try {
+                    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+                    Date date = sdf.parse(dueDate);
+                    SimpleDateFormat displayFormat = new SimpleDateFormat("EEE, MMM d");
+                    
+                    Date today = new Date();
+                    Calendar cal1 = Calendar.getInstance();
+                    cal1.setTime(date);
+                    Calendar cal2 = Calendar.getInstance();
+                    cal2.setTime(today);
+                    
+                    if (cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) && 
+                        cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)) {
+                        dateLabel.setText("Today");
+                    } else if (date.before(today)) {
+                        dateLabel.setText("Past");
+                    } else {
+                        dateLabel.setText(displayFormat.format(date));
+                    }
+                } catch (Exception e) {
+                    dateLabel.setText(dueDate);
+                }
+            } else {
+                dateLabel.setText("No Date");
+            }
             
             if (isSelected) {
                 setBackground(new Color(220, 220, 220));
@@ -246,6 +371,52 @@ public class ThinkFast extends JFrame {
             
             return this;
         }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            
+            if (isHovering) {
+                Graphics2D g2d = (Graphics2D) g.create();
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                int x = circlePanel.getX() + 5;
+                int y = circlePanel.getY() + 5;
+                
+                // Draw checkmark when hovering
+                g2d.setColor(GREEN);
+                g2d.drawOval(x, y, 20, 20);
+                
+                if (circlePanel.getBounds().contains(getMousePosition())) {
+                    g2d.drawLine(x + 5, y + 10, x + 9, y + 14);
+                    g2d.drawLine(x + 9, y + 14, x + 15, y + 8);
+                }
+                
+                g2d.dispose();
+            }
+        }
+    }
+
+    private void completeTask(Task task, int index) {
+        int response = JOptionPane.showConfirmDialog(this, 
+            "Mark '" + task.getTitle() + "' as completed?", 
+            "Complete Task", JOptionPane.YES_NO_OPTION);
+        
+        if (response == JOptionPane.YES_OPTION) {
+            tasks.remove(index);
+            completedTasks.add(task);
+            updateList();
+            saveTasks();
+            viewComboBoxModel.removeElementAt(1);
+viewComboBoxModel.insertElementAt("Completed (" + completedTasks.size() + ")", 1);
+        }
+    }
+
+    private void showCompletedTasks() {
+        listModel.clear();
+        for (Task task : completedTasks) {
+            listModel.addElement(task);
+        }
     }
 
     private void centerFrame() {
@@ -256,23 +427,27 @@ public class ThinkFast extends JFrame {
     }
 
     private void showAddTaskDialog() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBackground(WHITE);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.anchor = GridBagConstraints.WEST;
+        
+        JLabel titleLabel = new JLabel("Title:");
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 14));
         JTextField titleField = new JTextField(20);
         titleField.setFont(new Font("Arial", Font.PLAIN, 16));
-        titleField.setBorder(BorderFactory.createCompoundBorder(
-            titleField.getBorder(), 
-            new EmptyBorder(5, 10, 5, 10)
-        ));
-
+        
+        JLabel descLabel = new JLabel("Description:");
+        descLabel.setFont(new Font("Arial", Font.BOLD, 14));
         JTextArea descArea = new JTextArea(5, 20);
         descArea.setFont(new Font("Arial", Font.PLAIN, 16));
         descArea.setLineWrap(true);
         descArea.setWrapStyleWord(true);
-        descArea.setBorder(BorderFactory.createCompoundBorder(
-            descArea.getBorder(), 
-            new EmptyBorder(5, 10, 5, 10)
-        ));
         JScrollPane descScrollPane = new JScrollPane(descArea);
-
+        
+        JLabel dateLabel = new JLabel("Due Date:");
+        dateLabel.setFont(new Font("Arial", Font.BOLD, 14));
         JPanel datePanel = new JPanel(new BorderLayout());
         JFormattedTextField dateField = new JFormattedTextField(new SimpleDateFormat("dd/MM/yyyy"));
         dateField.setFont(new Font("Arial", Font.PLAIN, 14));
@@ -283,48 +458,38 @@ public class ThinkFast extends JFrame {
             showDatePicker(dateField);
             dateField.requestFocus();
         });
-
         datePanel.add(dateField, BorderLayout.CENTER);
         datePanel.add(datePickerButton, BorderLayout.EAST);
-        
-        JLabel titleLabel = new JLabel("Title:");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        JLabel descLabel = new JLabel("Description:");
-        descLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        JLabel dateLabel = new JLabel("Due Date:");
-        dateLabel.setFont(new Font("Arial", Font.BOLD, 14));
-
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(WHITE);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
         
         gbc.gridx = 0;
         gbc.gridy = 0;
         panel.add(titleLabel, gbc);
+        
         gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.weightx = 1.0;
         panel.add(titleField, gbc);
         
         gbc.gridx = 0;
         gbc.gridy = 1;
+        gbc.fill = GridBagConstraints.NONE;
         panel.add(descLabel, gbc);
+        
         gbc.gridx = 1;
-        gbc.weightx = 1.0;
-        gbc.weighty = 1.0;
         gbc.fill = GridBagConstraints.BOTH;
+        gbc.weighty = 1.0;
         panel.add(descScrollPane, gbc);
         
         gbc.gridx = 0;
         gbc.gridy = 2;
+        gbc.fill = GridBagConstraints.NONE;
         gbc.weighty = 0;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.add(dateLabel, gbc);
+        
         gbc.gridx = 1;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
         panel.add(datePanel, gbc);
-
+        
         JOptionPane pane = new JOptionPane(panel, JOptionPane.PLAIN_MESSAGE, JOptionPane.OK_CANCEL_OPTION);
         JDialog dialog = pane.createDialog(this, "Add New Task");
         dialog.setPreferredSize(new Dimension(500, 350));
@@ -454,6 +619,7 @@ public class ThinkFast extends JFrame {
     private void saveTasks() {
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("tasks_data.dat"))) {
             oos.writeObject(tasks);
+            oos.writeObject(completedTasks);
         } catch (IOException e) {
             System.err.println("Error saving tasks: " + e.getMessage());
         }
@@ -468,6 +634,9 @@ public class ThinkFast extends JFrame {
         
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
             tasks = (List<Task>) ois.readObject();
+            completedTasks = (List<Task>) ois.readObject();
+            viewComboBoxModel.removeElementAt(1);
+            viewComboBoxModel.insertElementAt("Completed (" + completedTasks.size() + ")", 1);
             updateList();
         } catch (IOException | ClassNotFoundException e) {
             System.err.println("Error loading tasks: " + e.getMessage());
