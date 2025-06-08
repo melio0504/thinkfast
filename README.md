@@ -16,7 +16,7 @@ This project demonstrates essential Java concepts, including:
 
 ### Features
 - Add, edit, and delete tasks
-- Sort tasks by priority (more options can be added)
+- Sort tasks by priority
 - Simple, focused, and clutter-free interface
 - Tasks are saved locally using text file I/O
 
