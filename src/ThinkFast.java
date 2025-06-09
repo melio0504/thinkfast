@@ -27,22 +27,22 @@ public class ThinkFast extends JFrame {
     private final Color PAPER_LINE_COLOR = new Color(139, 0, 0);
 
     private ImageIcon createAppIcon() {
-            try {
-                File iconFile = new File("./assets/icon.png");
-                if (iconFile.exists()) {
-                    return new ImageIcon(iconFile.getAbsolutePath());
-                }
-                
-                InputStream imgStream = getClass().getResourceAsStream("/icon.png");
-                if (imgStream != null) {
-                    return new ImageIcon(ImageIO.read(imgStream));
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+        try {
+            File iconFile = new File("./assets/icon.png");
+            if (iconFile.exists()) {
+                return new ImageIcon(iconFile.getAbsolutePath());
             }
             
-            return null;
+            InputStream imgStream = getClass().getResourceAsStream("/icon.png");
+            if (imgStream != null) {
+                return new ImageIcon(ImageIO.read(imgStream));
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
+        
+        return null;
+    }
 
     public ThinkFast() {
         setTitle("ThinkFast");
@@ -74,20 +74,40 @@ public class ThinkFast extends JFrame {
         titleLabel.setBorder(new EmptyBorder(0, 20, 0, 0));
         headerPanel.add(titleLabel, BorderLayout.WEST);
 
+        JPanel sortViewPanel = new JPanel(new BorderLayout());
+        sortViewPanel.setBackground(WHITE);
+        sortViewPanel.setBorder(new EmptyBorder(5, 10, 5, 10));
+
         JPanel sortPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
         sortPanel.setBackground(WHITE);
-        sortPanel.setBorder(new EmptyBorder(5, 10, 5, 10));
-        
         sortComboBox = new JComboBox<>(new String[]{"Custom", "Due Date", "Title"});
         sortComboBox.setSelectedItem("Due Date");
         sortComboBox.addActionListener(e -> sortTasks());
         sortPanel.add(new JLabel("Sort by:"));
         sortPanel.add(sortComboBox);
 
+        JPanel viewPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 5));
+        viewPanel.setBackground(WHITE);
+        viewComboBoxModel = new DefaultComboBoxModel<>(new String[]{"Active Tasks", "Completed"});
+        viewComboBox = new JComboBox<>(viewComboBoxModel);
+        viewComboBox.addActionListener(e -> {
+            if (viewComboBox.getSelectedIndex() == 1) {
+                showCompletedTasks();
+            } else {
+                updateList();
+            }
+        });
+
+        viewPanel.add(new JLabel("View:"));
+        viewPanel.add(viewComboBox);
+
+        sortViewPanel.add(sortPanel, BorderLayout.WEST);
+        sortViewPanel.add(viewPanel, BorderLayout.EAST);
+
         JPanel topPanel = new JPanel();
         topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
         topPanel.add(headerPanel);
-        topPanel.add(sortPanel);
+        topPanel.add(sortViewPanel);
 
         JPanel contentPanel = new JPanel(new BorderLayout());
         contentPanel.setBackground(LIGHT_GRAY);
@@ -112,33 +132,34 @@ public class ThinkFast extends JFrame {
         bottomPanel.setBackground(LIGHT_GRAY);
         bottomPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
 
-        viewComboBoxModel = new DefaultComboBoxModel<>(new String[]{"Active Tasks", "Completed (0)"});
-viewComboBox = new JComboBox<>(viewComboBoxModel);
-        viewComboBox.addActionListener(e -> {
-            if (viewComboBox.getSelectedIndex() == 1) {
-                showCompletedTasks();
-            } else {
-                updateList();
-            }
-        });
-        JPanel viewPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        viewPanel.setBackground(LIGHT_GRAY);
-        viewPanel.add(new JLabel("View:"));
-        viewPanel.add(viewComboBox);
-        bottomPanel.add(viewPanel, BorderLayout.NORTH);
-
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new FlowLayout(FlowLayout.RIGHT, 20, 10));
+        JPanel buttonPanel = new JPanel(new BorderLayout());
         buttonPanel.setBackground(LIGHT_GRAY);
         buttonPanel.setBorder(new EmptyBorder(0, 0, 20, 0));
 
+        JPanel leftButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 10));
+        leftButtonPanel.setBackground(LIGHT_GRAY);
+        JButton markDoneButton = new JButton("Mark as Done");
+        markDoneButton.setBackground(new Color(0, 128, 0));
+        markDoneButton.setForeground(Color.WHITE);
+        markDoneButton.setFocusPainted(false);
+        markDoneButton.setBorderPainted(false);
+        markDoneButton.setMargin(new Insets(10, 20, 10, 20));
+        markDoneButton.setOpaque(true);      
+        markDoneButton.addActionListener(e -> markTaskAsDone());
+        leftButtonPanel.add(markDoneButton);
+
+        JPanel rightButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 20, 10));
+        rightButtonPanel.setBackground(LIGHT_GRAY);
         JButton addButton = createFloatingActionButton("+");
         JButton deleteButton = createIconButton("Delete", UIManager.getIcon("FileView.fileIcon"));
         JButton editButton = createIconButton("Edit", UIManager.getIcon("FileView.directoryIcon"));
 
-        buttonPanel.add(editButton);
-        buttonPanel.add(deleteButton);
-        buttonPanel.add(addButton);
+        rightButtonPanel.add(editButton);
+        rightButtonPanel.add(deleteButton);
+        rightButtonPanel.add(addButton);
+
+        buttonPanel.add(leftButtonPanel, BorderLayout.WEST);
+        buttonPanel.add(rightButtonPanel, BorderLayout.EAST);
         bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         add(topPanel, BorderLayout.NORTH);
@@ -156,27 +177,47 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
             public void mouseClicked(MouseEvent e) {
                 int index = taskList.locationToIndex(e.getPoint());
                 if (index >= 0) {
-                    TaskListRenderer renderer = (TaskListRenderer) taskList.getCellRenderer()
-                        .getListCellRendererComponent(taskList, taskList.getModel().getElementAt(index), 
-                        index, false, false);
-                    
-                    Rectangle cellBounds = taskList.getCellBounds(index, index);
-                    renderer.setBounds(cellBounds);
-                    
-                    Point relativePoint = SwingUtilities.convertPoint(taskList, e.getPoint(), renderer);
-                    
-                    if (renderer.markAsDone.contains(relativePoint)) {
-                        renderer.markAsDone.dispatchEvent(
-                            SwingUtilities.convertMouseEvent(taskList, e, renderer.markAsDone));
-                        return;
-                    }
-                    
                     taskList.setSelectedIndex(index);
                 }
             }
         });
 
         setVisible(true);
+    }
+
+    private void markTaskAsDone() {
+        int selectedIndex = taskList.getSelectedIndex();
+        if (selectedIndex == -1) {
+            JOptionPane.showMessageDialog(this, 
+                "Select a task first!", 
+                "Oopsie!", 
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        Task task;
+        if (viewComboBox.getSelectedIndex() == 0) {
+            task = tasks.get(selectedIndex);
+            tasks.remove(selectedIndex);
+            completedTasks.add(task);
+        } else {
+            task = completedTasks.get(selectedIndex);
+            completedTasks.remove(selectedIndex);
+            tasks.add(task);
+        }
+        
+        updateList();
+        saveTasks();
+        updateCompletedCount();
+        
+        if (viewComboBox.getSelectedIndex() == 1 && completedTasks.isEmpty()) {
+            viewComboBox.setSelectedIndex(0);
+        }
+    }
+
+    private void updateCompletedCount() {
+        viewComboBoxModel.removeElementAt(1);
+        viewComboBoxModel.insertElementAt("Completed", 1);
     }
 
     class ReorderListTransferHandler extends TransferHandler {
@@ -793,6 +834,9 @@ viewComboBox = new JComboBox<>(viewComboBoxModel);
     }
 
     public static void main(String[] args) {
+        System.setProperty("jdk.gtk.verbose", "false");
+        System.setProperty("jdk.gtk.version", "2");
+
         new SplashScreen(2000);
 
         SwingUtilities.invokeLater(() -> {
