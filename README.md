@@ -23,6 +23,10 @@ This project demonstrates essential Java concepts, including:
 ## Screenshot
 
 ![Program Screenshot](./assets/1.png)
+![Program Screenshot](./assets/2.png)
+![Program Screenshot](./assets/3.png)
+![Program Screenshot](./assets/4.png)
+![Program Screenshot](./assets/5.png)
 
 ### How to Run
 
