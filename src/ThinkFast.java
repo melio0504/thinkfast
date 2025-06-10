@@ -12,7 +12,16 @@ import java.util.*;
 import java.util.List;
 import javax.imageio.ImageIO;
 
+// Classes and objects
+
+// Inheritance
+
 public class ThinkFast extends JFrame {
+
+    // Encapsulation
+
+    // ArrayList 
+
     private List<Task> tasks = new ArrayList<>();
     private List<Task> completedTasks = new ArrayList<>();
     private DefaultListModel<Task> listModel = new DefaultListModel<>();
@@ -27,6 +36,9 @@ public class ThinkFast extends JFrame {
     private final Color PAPER_LINE_COLOR = new Color(139, 0, 0);
 
     private ImageIcon createAppIcon() {
+
+        // Exception Handling
+
         try {
             File iconFile = new File("./assets/icon.png");
             if (iconFile.exists()) {
@@ -591,6 +603,9 @@ public class ThinkFast extends JFrame {
         pane.addPropertyChangeListener(e -> {
             if (e.getPropertyName().equals("value")) {
                 if (pane.getValue() != null && pane.getValue().equals(JOptionPane.OK_OPTION)) {
+
+                    // String Handling
+
                     String title = titleField.getText().trim();
                     String dateText = dateField.getText().trim();
                     
@@ -807,6 +822,9 @@ public class ThinkFast extends JFrame {
     }
 
     private void saveTasks() {
+
+        // File Handling (File Input / Output)
+
         try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("tasks_data.dat"))) {
             oos.writeObject(tasks);
             oos.writeObject(completedTasks);
