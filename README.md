@@ -59,4 +59,4 @@ java ThinkFast
 
 ---
 
-Built with core Java, using standard libraries and GUI components.
+Note: This is for my finals in Object Oriented Programming subject 
